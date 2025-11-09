@@ -122,7 +122,9 @@ class GeneralSQLSerializer:
 
         return cols
 
-    def serialize_object(self, obj: BaseModel, no_bind: bool = False) -> dict[str, Any]:
+    def serialize_object(
+        self, obj: BaseModel, no_bind: bool = False
+    ) -> dict[str, Any]:
         table = obj.__class__.__name__
         columns = self.serialize_schema(table, obj.model_json_schema())
 
@@ -142,6 +144,17 @@ class GeneralSQLSerializer:
         return obj_data
 
     def deserialize_object(
-        self, columns: list[SQLColumn], obj_data: dict[str, Any]
+        self, cls: BaseModel, obj_data: tuple[Any]
     ) -> BaseModel:
-        pass
+
+        columns = self.serialize_schema(cls.__name__, cls.model_json_schema())
+        values = {}
+
+        for i, col in enumerate(columns):
+            if col.datatype == "bytes":
+                values[col.name] = pickle.loads(obj_data[i])
+            else:
+                values[col.name] = obj_data[i]
+
+        result = cls(**values)
+        return result

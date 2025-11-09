@@ -19,7 +19,7 @@ class PWEngineFactory(abc.ABC):
         return SqliteEngine(conn)
 
 
-def binded(func):
+def bound(func):
     def wrapper(cls, *args, **kwargs):
         if "db" not in dir(cls):
             raise NO_BIND
@@ -47,20 +47,22 @@ class PWModel(BaseModel):
             for prim in DEFAULT_PRIM_KEYS:
                 if prim in [x.name for x in columns]:
                     continue
+                primary_key = prim
                 columns.append(SQLColumn(prim, int, False, None, True, True))
 
+        cls.primary = primary_key
         db.migrate(cls.__name__, columns)
 
     @classmethod
-    @binded
-    def get(cls, **kwargs) -> list[Any]:
+    @bound
+    def get(cls, **kwargs) -> "PWModel":
         data = cls.db.select("*", cls.__name__, kwargs)
         if len(data) < 1:
             return None
-        return data[0]  # TODO -> object bound to db row
+        return GeneralSQLSerializer().deserialize_object(cls, data[0])
     
     
-    @binded
+    @bound
     def save(self):
         table = self.__class__.__name__
         obj_data = GeneralSQLSerializer().serialize_object(self)
