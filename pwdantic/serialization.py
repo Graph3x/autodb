@@ -138,10 +138,10 @@ class GeneralSQLSerializer:
 
         if no_bind:
             return obj_data
-        
+
         return obj_data
 
     def deserialize_object(
-        self, columns: list[SQLColumn], obj_data: str[Any]
+        self, columns: list[SQLColumn], obj_data: dict[str, Any]
     ) -> BaseModel:
         pass

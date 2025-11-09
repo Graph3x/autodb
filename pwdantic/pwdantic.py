@@ -54,12 +54,10 @@ class PWModel(BaseModel):
     @classmethod
     @binded
     def get(cls, **kwargs) -> list[Any]:
-        data = cls.db.select("*", cls.__name__)
+        data = cls.db.select("*", cls.__name__, **kwargs)
         return data  # TODO -> object bound to db row
     
-    def __init__(self):
-        self.obj_bind = None
-
+    
     @binded
     def save(self):
         table = self.__class__.__name__

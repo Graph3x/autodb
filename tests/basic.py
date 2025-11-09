@@ -106,28 +106,35 @@ def complex_object():
     print(sr)
 
 
+class Duck(PWModel):
+    id: int | None = None
+    name: str
+    color: str = "Brown"
+    age: int | None = None
+    shopping_list: list[str] = ["apple"]
+    children: list["Duck"] = []
+
+    @classmethod
+    def bind(cls, engine):
+        super().bind(engine, primary_key="id", unique=["name"])
+
 def main():
     engine = PWEngineFactory.create_sqlite3_engine("test.db")
 
-    class Duck(PWModel):
-        id: int | None = None
-        name: str
-        color: str = "Brown"
-        age: int | None = None
-        shopping_list: list = ["apple", "parizak"]
-
-        @classmethod
-        def bind(cls, engine):
-            super().bind(engine, primary_key="id", unique=["name"])
-
     Duck.bind(engine)
 
-    print(Duck.get(name="McDuck"))
+    mc_duck_junior = Duck(name="Junior", age=15, shopping_list=["junior", "rohlik", "gothaj"])
+    mc_duck_junior.save()
+
+    mc_duck = Duck(name="McDuck", color="Yellow", age=45, children=[mc_duck_junior])
+    mc_duck.save()
+
+    mc_2 = Duck.get(name="McDuck")
+    print(mc_2)
 
     return
 
-    mc_duck_junior = Duck(name="Junior", age=15)
-    mc_duck_junior.save()
+
 
     print(Duck.get(name="McDuck"))
 
