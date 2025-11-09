@@ -118,26 +118,30 @@ class Duck(PWModel):
     def bind(cls, engine):
         super().bind(engine, primary_key="id", unique=["name"])
 
+    def quack(self):
+        print(f"Hi! I am {self.name} quack!")
+
+
 def main():
     engine = PWEngineFactory.create_sqlite3_engine("test.db")
 
     Duck.bind(engine)
 
-    mc_duck_junior = Duck(name="Junior", age=15, shopping_list=["junior", "rohlik", "gothaj"])
-    mc_duck_junior.save()
+    mc_duck_junior = Duck.get(name="Junior")
 
-    mc_duck = Duck(name="McDuck", color="Yellow", age=45, children=[mc_duck_junior])
-    mc_duck.save()
+    if mc_duck_junior is None:
+        mc_duck_junior = Duck(name="Junior", age=15, shopping_list=["junior", "rohlik", "gothaj"])
+        mc_duck_junior.save()
 
-    mc_2 = Duck.get(name="McDuck")
-    print(mc_2)
+        mc_duck = Duck(name="McDuck", color="Yellow", age=45, children=[mc_duck_junior])
+        mc_duck.save()
 
-    return
+    mc_duck = Duck.get(name="McDuck")
+    print(mc_duck_junior)
+    print(mc_duck)
 
-
-
-    print(Duck.get(name="McDuck"))
-
+    duck_the_duck = Duck(name="Duck")
+    duck_the_duck.quack()
 
 if __name__ == "__main__":
     #complex_object()

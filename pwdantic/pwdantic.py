@@ -54,8 +54,10 @@ class PWModel(BaseModel):
     @classmethod
     @binded
     def get(cls, **kwargs) -> list[Any]:
-        data = cls.db.select("*", cls.__name__, **kwargs)
-        return data  # TODO -> object bound to db row
+        data = cls.db.select("*", cls.__name__, kwargs)
+        if len(data) < 1:
+            return None
+        return data[0]  # TODO -> object bound to db row
     
     
     @binded
