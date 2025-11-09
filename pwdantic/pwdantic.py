@@ -6,6 +6,8 @@ from typing import Any
 from pwdantic.exceptions import NO_BIND, INVALID_TYPES
 
 
+DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
+
 class PWEngine(abc.ABC):
 
     def select(
@@ -69,8 +71,6 @@ class SqliteEngine(PWEngine):
         return types[str_type]
 
     def _get_types(self, column: dict) -> tuple[str, str]:
-        modifier = ""
-
         if "anyOf" in column.keys():
             if len(column["anyOf"]) > 2:
                 raise INVALID_TYPES
@@ -90,34 +90,55 @@ class SqliteEngine(PWEngine):
 
         else:
             str_type = self._transfer_type(column["type"])
+            modifier = "NOT NULL"
 
         return (str_type, modifier)
 
-    def _create_new(self, schema: str):
+    def _create_new(
+        self,
+        schema: str,
+        primary_key: str | None,
+        references: dict[str, str],
+        unique: list[str],
+    ):
         table = schema["title"]
         cols = []
 
-        if "id" not in schema["properties"].keys():
-            cols.append("id INTEGER PRIMARY KEY AUTOINCREMENT")
+        if primary_key is None:
+            for prim in DEFAULT_PRIM_KEYS:
+                if prim not in schema["properties"].keys():
+                    cols.append("{prim} INTEGER PRIMARY KEY AUTOINCREMENT")
 
-        for col_name, column in schema["properties"].items():
+        for col_name, column_data in schema["properties"].items():
+            str_type, modifier = self._get_types(column_data)
 
-            str_type, modifier = self._get_types(column)
+            if col_name == primary_key:
+                modifier = "PRIMARY KEY NOT NULL"
 
-            if col_name == "id":
-                modifier = "PRIMARY KEY AUTOINCREMENT"
+            new_col = f"{col_name} {str_type} {modifier}"
 
-            col = f"{col_name} {str_type} {modifier}"
-            cols.append(col)
+            if col_name in unique:
+                new_col += " UNIQUE"
+
+            if column_data.get("default", None) is not None:
+                new_col += f" DEFAULT {column_data["default"]}"
+
+            cols.append(new_col)
 
         self.cursor.execute(
             f"CREATE TABLE IF NOT EXISTS {table} ({','.join(cols)})"
         )
 
     def _migrate_from(self, schema: str):
-        pass
+        pass  # TODO
 
-    def migrate(self, schema: dict[str, Any]):
+    def migrate(
+        self,
+        schema: dict[str, Any],
+        primary_key: str | None,
+        references: dict[str, str],
+        unique: list[str],
+    ):
         table = schema["title"]
 
         matched_tables = self.cursor.execute(
@@ -125,7 +146,7 @@ class SqliteEngine(PWEngine):
         ).fetchall()
 
         if len(matched_tables) == 0:
-            return self._create_new(schema)
+            return self._create_new(schema, primary_key, references, unique)
 
         else:
             return self._migrate_from(schema)
@@ -150,9 +171,15 @@ def binded(func):
 
 class PWModel(BaseModel):
     @classmethod
-    def bind(cls, db: PWEngine):
+    def bind(
+        cls,
+        db: PWEngine,
+        primary_key: str | None = None,
+        references: dict[str, str] = {},
+        unique: list[str] = [],
+    ):
         cls.db = db
-        db.migrate(cls.model_json_schema())
+        db.migrate(cls.model_json_schema(), primary_key, references, unique)
 
     @classmethod
     @binded
