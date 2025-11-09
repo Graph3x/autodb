@@ -1,7 +1,8 @@
 import sqlite3
 from typing import Any
-from pwdantic.exceptions import INVALID_TYPES
+
 from pwdantic.interfaces import PWEngine
+from pwdantic.serialization import GeneralSQLSerializer, SQLColumn
 
 DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
 
@@ -10,9 +11,9 @@ class SqliteEngine(PWEngine):
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
         self.cursor = conn.cursor()
+        self.gss = GeneralSQLSerializer()
 
     def __del__(self):
-        self.cursor.close()
         self.conn.close()
 
     def select(
@@ -45,72 +46,60 @@ class SqliteEngine(PWEngine):
 
     def _transfer_type(self, str_type: str) -> str:
         types = {
-            "null": "NULL",
             "integer": "INTEGER",
+            "date-time": "TIMESTAMP",
             "string": "TEXT",
-            "float": "REAL",
+            "number": "REAL",
+            "boolean": "BOOLEAN",
             "bytes": "BLOB",
         }
 
         return types[str_type]
 
-    def _get_types(self, column: dict) -> tuple[str, str]:
-        if "anyOf" in column.keys():
-            if len(column["anyOf"]) > 2:
-                raise INVALID_TYPES
-
-            type1 = column["anyOf"][0]["type"]
-            type2 = column["anyOf"][1]["type"]
-
-            if type1 != "null" and type2 != "null":
-                raise INVALID_TYPES
-
-            modifier = "NULLABLE"
-            str_type = (
-                self._transfer_type(type1)
-                if type1 != "null"
-                else self._transfer_type(type2)
-            )
-
-        else:
-            str_type = self._transfer_type(column["type"])
-            modifier = "NOT NULL"
-
-        return (str_type, modifier)
-
     def _create_new(
         self,
+        classname: str,
         schema: str,
         primary_key: str | None,
-        references: dict[str, str],
         unique: list[str],
     ):
-        table = schema["title"]
-        cols = []
+        standard_cols = self.gss.serialize_schema(
+            classname, schema, primary_key, unique
+        )
 
         if primary_key is None:
             for prim in DEFAULT_PRIM_KEYS:
-                if prim not in schema["properties"].keys():
-                    cols.append("{prim} INTEGER PRIMARY KEY AUTOINCREMENT")
+                if prim in schema["properties"].keys():
+                    continue
+                standard_cols.append(
+                    SQLColumn(prim, int, False, None, True, True)
+                )
 
-        for col_name, column_data in schema["properties"].items():
-            str_type, modifier = self._get_types(column_data)
+        sqlite_cols = []
+        for column in standard_cols:
+            lite_col = f"{column.name} {self._transfer_type(column.datatype)}"
 
-            if col_name == primary_key:
-                modifier = "PRIMARY KEY NOT NULL"
+            if column.nullable and not column.primary_key:
+                lite_col += " NULLABLE"
+            else:
+                lite_col += " NOT NULL"
 
-            new_col = f"{col_name} {str_type} {modifier}"
+            if column.primary_key:
+                lite_col += " PRIMARY KEY AUTOINCREMENT"
 
-            if col_name in unique:
-                new_col += " UNIQUE"
+            if column.unique:
+                lite_col += " UNIQUE"
 
-            if column_data.get("default", None) is not None:
-                new_col += f" DEFAULT {column_data["default"]}"
+            if column.default is not None:
+                if column.datatype != "bytes":
+                    lite_col += f" DEFAULT {column.default}"
+                else:
+                    lite_col += f" DEFAULT X'{column.default.hex().upper()}'"
 
-            cols.append(new_col)
+            sqlite_cols.append(lite_col)
 
         self.cursor.execute(
-            f"CREATE TABLE IF NOT EXISTS {table} ({','.join(cols)})"
+            f"CREATE TABLE IF NOT EXISTS {classname} ({','.join(sqlite_cols)})"
         )
 
     def _migrate_from(self, schema: str):
@@ -118,9 +107,9 @@ class SqliteEngine(PWEngine):
 
     def migrate(
         self,
+        classname: str,
         schema: dict[str, Any],
         primary_key: str | None,
-        references: dict[str, str],
         unique: list[str],
     ):
         table = schema["title"]
@@ -130,7 +119,7 @@ class SqliteEngine(PWEngine):
         ).fetchall()
 
         if len(matched_tables) == 0:
-            return self._create_new(schema, primary_key, references, unique)
+            return self._create_new(classname, schema, primary_key, unique)
 
         else:
             return self._migrate_from(schema)

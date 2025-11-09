@@ -30,11 +30,10 @@ class PWModel(BaseModel):
         cls,
         db: PWEngine,
         primary_key: str | None = None,
-        references: dict[str, str] = {},
         unique: list[str] = [],
     ):
         cls.db = db
-        db.migrate(cls.model_json_schema(), primary_key, references, unique)
+        db.migrate(cls.__name__, cls.model_json_schema(), primary_key, unique)
 
     @classmethod
     @binded
