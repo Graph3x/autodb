@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 import abc
 import sqlite3
-from typing import Any
+from typing import Any, Self
 
 from pwdantic.exceptions import NO_BIND
 from pwdantic.sqlite import SqliteEngine
@@ -55,7 +55,7 @@ class PWModel(BaseModel):
 
     @classmethod
     @bound
-    def get(cls, **kwargs) -> "PWModel":
+    def get(cls, **kwargs) -> Self:
         data = cls.db.select("*", cls.__name__, kwargs)
         if len(data) < 1:
             return None
