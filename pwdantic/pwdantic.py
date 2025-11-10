@@ -50,7 +50,7 @@ class PWModel(BaseModel):
                 primary_key = prim
                 columns.append(SQLColumn(prim, int, False, None, True, True))
 
-        cls.primary = primary_key
+        cls._primary = primary_key
         db.migrate(cls.__name__, columns)
 
     @classmethod
@@ -59,10 +59,18 @@ class PWModel(BaseModel):
         data = cls.db.select("*", cls.__name__, kwargs)
         if len(data) < 1:
             return None
-        return GeneralSQLSerializer().deserialize_object(cls, data[0])
+        object = GeneralSQLSerializer().deserialize_object(cls, data[0])
+        setattr(
+            object, "_data_bind", getattr(object, object.__class__._primary)
+        )
+        return object
 
     @bound
     def save(self):
         table = self.__class__.__name__
         obj_data = GeneralSQLSerializer().serialize_object(self)
-        self.db.insert(table, obj_data)
+
+        insert_bind = self.db.insert(table, obj_data)
+        bind_attr = getattr(self, self.__class__._primary)
+        data_bind = bind_attr if bind_attr != None else insert_bind
+        setattr(self, "_data_bind", data_bind)

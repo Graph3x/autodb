@@ -33,7 +33,7 @@ class SqliteEngine(PWEngine):
 
         return self.cursor.fetchall()
 
-    def insert(self, table: str, obj_data: dict[str, Any]):
+    def insert(self, table: str, obj_data: dict[str, Any]) -> int:
         cols = [col for col, val in obj_data.items() if val != None]
         vals = [val for val in obj_data.values() if val != None]
 
@@ -44,6 +44,7 @@ class SqliteEngine(PWEngine):
 
         self.cursor.execute(query, tuple(vals))
         self.conn.commit()
+        return self.cursor.lastrowid
 
     def _transfer_type(self, str_type: str) -> str:
         types = {

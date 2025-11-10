@@ -38,7 +38,6 @@ def main():
         mc_duck.save()
 
     mc_duck = Duck.get(name="McDuck")
-
     mc_duck.children[0].quack()
 
 
