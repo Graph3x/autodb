@@ -2,7 +2,7 @@ from pwdantic.pwdantic import PWModel, PWEngineFactory
 
 
 class Duck(PWModel):
-    id: int | None = None
+    duck_id: int | None = None
     name: str
     color: str = "Brown"
     age: int | None = None
@@ -11,7 +11,7 @@ class Duck(PWModel):
 
     @classmethod
     def bind(cls, engine):
-        super().bind(engine, primary_key="id", unique=["name"])
+        super().bind(engine, primary_key="duck_id", unique=["name"])
 
     def quack(self):
         print(f"Hi! I am {self.name} age {self.age} quack!")
@@ -40,6 +40,11 @@ def main():
     mc_duck = Duck.get(name="McDuck")
     mc_duck.children[0].quack()
 
+    mc_duck.name = "McDuckyDuck"
+    mc_duck.save()
+
+    mc_duck = Duck.get(duck_id=mc_duck.duck_id)
+    print(mc_duck.name)
 
 if __name__ == "__main__":
     main()

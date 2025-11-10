@@ -104,3 +104,18 @@ class SqliteEngine(PWEngine):
 
         else:
             return self._migrate_from()
+
+    def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
+        cols = [col for col, val in obj_data.items() if val != None]
+        vals = [val for val in obj_data.values() if val != None]
+
+        set_string = ""
+        for col in cols:
+            set_string += f"{col} = ?, "
+        set_string = set_string[:-2]
+
+        query = f"UPDATE {table} SET {set_string} WHERE {primary_key} = ?"
+        vals.append(obj_data[primary_key])
+
+        self.cursor.execute(query, tuple(vals))
+        self.conn.commit()

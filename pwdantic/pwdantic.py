@@ -3,7 +3,7 @@ import abc
 import sqlite3
 from typing import Any, Self
 
-from pwdantic.exceptions import NO_BIND
+from pwdantic.exceptions import PWNoBindError, PWBindViolationError
 from pwdantic.sqlite import SqliteEngine
 from pwdantic.interfaces import PWEngine
 
@@ -22,7 +22,7 @@ class PWEngineFactory(abc.ABC):
 def bound(func):
     def wrapper(cls, *args, **kwargs):
         if "db" not in dir(cls):
-            raise NO_BIND
+            raise PWNoBindError()
 
         return func(cls, *args, **kwargs)
 
@@ -65,8 +65,7 @@ class PWModel(BaseModel):
         )
         return object
 
-    @bound
-    def save(self):
+    def _create(self):
         table = self.__class__.__name__
         obj_data = GeneralSQLSerializer().serialize_object(self)
 
@@ -74,3 +73,20 @@ class PWModel(BaseModel):
         bind_attr = getattr(self, self.__class__._primary)
         data_bind = bind_attr if bind_attr != None else insert_bind
         setattr(self, "_data_bind", data_bind)
+
+    def _update(self):
+        bind = self._data_bind
+        if getattr(self, self.__class__._primary) != bind:
+            raise PWBindViolationError()
+
+        table = self.__class__.__name__
+
+        obj_data = GeneralSQLSerializer().serialize_object(self)
+
+        self.db.update(table, obj_data, self.__class__._primary)
+
+    @bound
+    def save(self):
+        if getattr(self, "_data_bind", None) is None:
+            return self._create()
+        return self._update()

@@ -1,4 +1,4 @@
-from pwdantic.exceptions import INVALID_TYPES
+from pwdantic.exceptions import PWInvalidTypeError
 from typing import Any
 import pickle
 from pydantic import BaseModel
@@ -30,16 +30,16 @@ class GeneralSQLSerializer:
     def _get_column_schema(self, name: str, column: dict) -> SQLColumn:
         if "anyOf" in column.keys():
             if len(column["anyOf"]) > 2:
-                raise INVALID_TYPES
+                raise PWInvalidTypeError()
 
             type1 = column["anyOf"][0]["type"]
             type2 = column["anyOf"][1]["type"]
 
             if type1 != "null" and type2 != "null":
-                raise INVALID_TYPES
+                raise PWInvalidTypeError()
 
             if type1 == "null" and type2 == "null":
-                raise INVALID_TYPES
+                raise PWInvalidTypeError()
 
             nullable = True
 
