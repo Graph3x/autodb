@@ -1,8 +1,7 @@
 import sqlite3
 from typing import Any
 
-from pwdantic.interfaces import PWEngine
-from pwdantic.serialization import SQLColumn
+from pwdantic.datatypes import PWEngine, SQLColumn
 from pwdantic.migrations import MigrationEngine, Migration
 
 sqlite_column = tuple[int, str, str, int, Any, int]

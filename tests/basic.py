@@ -8,7 +8,12 @@ class TestModel(PWModel):
 
     @classmethod
     def bind(cls, engine):
-        super().bind(engine, primary_key="pk", unique=["unq_string"], table="duck")
+        super().bind(
+            engine,
+            primary_key="pk",
+            unique=["unq_string"],
+            table="test_basic",
+        )
 
 
 def test_crud(engine: PWEngine):

@@ -2,28 +2,7 @@ from pwdantic.exceptions import PWInvalidTypeError
 from typing import Any
 import pickle
 from pydantic import BaseModel
-
-
-class SQLColumn:
-    def __init__(
-        self,
-        name: str,
-        datatype: str,
-        nullable: bool,
-        default: Any,
-        primary: bool = False,
-        unique: bool = False,
-    ):
-        self.name: str = name
-        self.datatype: str = datatype
-        self.nullable: bool = nullable
-        self.default: Any = default
-        self.primary_key: bool = primary
-        self.unique: bool = unique
-
-    def __str__(self):
-        return f"{self.name}: {("nullable " if self.nullable else "")}{("unique " if self.unique else "")}{("primary " if self.primary_key else "")}{self.datatype} ({self.default})"
-
+from pwdantic.datatypes import SQLColumn
 
 class GeneralSQLSerializer:
 

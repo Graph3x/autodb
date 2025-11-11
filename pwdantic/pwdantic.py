@@ -5,9 +5,9 @@ from typing import Any, Self
 
 from pwdantic.exceptions import *
 from pwdantic.sqlite import SqliteEngine
-from pwdantic.interfaces import PWEngine
+from pwdantic.datatypes import PWEngine, SQLColumn
 
-from pwdantic.serialization import GeneralSQLSerializer, SQLColumn
+from pwdantic.serialization import GeneralSQLSerializer
 
 DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
 
