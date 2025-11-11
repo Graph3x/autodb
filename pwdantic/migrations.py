@@ -12,12 +12,13 @@ class MigrationStep:
     destructive: bool
 
 
-class Add(MigrationStep):
+class AddCol(MigrationStep):
     name: str
 
 
-class Drop(MigrationStep):
+class DropCol(MigrationStep):
     name: str
+    destructive: bool = True
 
 
 class Rename(MigrationStep):
@@ -29,6 +30,7 @@ class Retype(MigrationStep):
     column: str
     old_type: str
     new_type: str
+    destructive: bool = True
 
 
 class AddConstraint(MigrationStep):

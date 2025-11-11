@@ -156,7 +156,7 @@ class SqliteEngine(PWEngine):
         return standard_cols
 
     def execute_migration(self, migration: Migration, force: bool = False):
-        # validate migration is executable
+        # validate migration is executable and not destructive
         # create a new table
         # copy the data over
         # drop old table

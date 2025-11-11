@@ -1,52 +1,59 @@
-from pwdantic.pwdantic import PWModel, PWEngineFactory
+from pwdantic.pwdantic import PWModel, PWEngineFactory, PWEngine
 
 
-class Duck(PWModel):
-    duck_id: int | None = None
-    name: str
-    color: str = "Brown"
-    age: int | None = None
-    shopping_list: list[str] = ["apple"]
-    children: list["Duck"] = []
+class TestModel(PWModel):
+    pk: int | None = None
+    unq_string: str
+    nullable_int: int | None = None
 
     @classmethod
     def bind(cls, engine):
-        super().bind(engine, primary_key="duck_id", unique=["name"])
+        super().bind(engine, primary_key="pk", unique=["unq_string"])
 
-    def quack(self):
-        print(f"Hi! I am {self.name} age {self.age} quack!")
+
+def test_crud(engine: PWEngine):
+    TestModel.bind(engine)
+
+    obj1 = TestModel(
+        unq_string="OBJ1",
+    )
+    obj1.save()
+
+    obj2 = TestModel(
+        unq_string="OBJ2",
+        nullable_int=5,
+    )
+    obj2.save()
+
+    obj1 = TestModel.get(unq_string="OBJ1")
+    obj2 = TestModel.get(unq_string="OBJ2")
+
+    assert obj1.unq_string == "OBJ1"
+    assert obj2.unq_string == "OBJ2"
+
+    assert obj1.pk != None
+    assert obj2.pk != None
+
+    assert obj1.nullable_int is None
+    assert obj2.nullable_int == 5
+
+    obj1.unq_string = "New_string"
+    obj1.save()
+
+    obj1 = TestModel.get(pk=obj1.pk)
+    assert obj1.unq_string == "New_string"
+
+    assert len(TestModel.all()) == 2
+
+    obj1.delete()
+    obj2.delete()
+
+    assert len(TestModel.all()) == 0
 
 
 def main():
     engine = PWEngineFactory.create_sqlite3_engine("test.db")
-
-    Duck.bind(engine)
-
-    mc_duck_junior = Duck(
-        name="Junior",
-        age=15,
-        shopping_list=["junior", "rohlik", "gothaj"],
-    )
-    mc_duck_junior.save()
-
-    mc_duck = Duck(
-        name="McDuck", color="Yellow", age=45, children=[mc_duck_junior]
-    )
-    mc_duck.save()
-
-    mc_duck = Duck.get(name="McDuck")
-    mc_duck.children[0].quack()
-
-    mc_duck.name = "McDuckyDuck"
-    mc_duck.save()
-
-    mc_duck = Duck.get(duck_id=mc_duck.duck_id)
-    print(mc_duck.name)
-
-    print([x.name for x in Duck.all()])
-
-    mc_duck.delete()
-    mc_duck_junior.delete()
+    test_crud(engine)
 
 
 if __name__ == "__main__":
