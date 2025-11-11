@@ -36,11 +36,14 @@ class PWModel(BaseModel):
         db: PWEngine,
         primary_key: str | None = None,
         unique: list[str] = [],
+        table: str = None
     ):
         cls.db = db
+        table = table if table is not None else cls.__name__
+
 
         columns = GeneralSQLSerializer().serialize_schema(
-            cls.__name__, cls.model_json_schema(), primary_key, unique
+            table, cls.model_json_schema(), primary_key, unique
         )
 
         if primary_key is None:
@@ -51,12 +54,15 @@ class PWModel(BaseModel):
                 columns.append(SQLColumn(prim, int, False, None, True, True))
 
         cls._primary = primary_key
-        db.migrate(cls.__name__, columns)
+
+        cls.table = table
+
+        db.migrate(table, columns)
 
     @classmethod
     @bound
     def get(cls, **kwargs) -> Self:
-        data = cls.db.select("*", cls.__name__, kwargs)
+        data = cls.db.select("*", cls.table, kwargs)
         if len(data) < 1:
             return None
         object = GeneralSQLSerializer().deserialize_object(cls, data[0])
@@ -66,10 +72,9 @@ class PWModel(BaseModel):
         return object
 
     def _create(self):
-        table = self.__class__.__name__
         obj_data = GeneralSQLSerializer().serialize_object(self)
 
-        insert_bind = self.db.insert(table, obj_data)
+        insert_bind = self.db.insert(self.__class__.table, obj_data)
         bind_attr = getattr(self, self.__class__._primary)
         data_bind = bind_attr if bind_attr != None else insert_bind
         setattr(self, "_data_bind", data_bind)
@@ -79,11 +84,8 @@ class PWModel(BaseModel):
         if getattr(self, self.__class__._primary) != bind:
             raise PWBindViolationError()
 
-        table = self.__class__.__name__
-
         obj_data = GeneralSQLSerializer().serialize_object(self)
-
-        self.db.update(table, obj_data, self.__class__._primary)
+        self.db.update(self.__class__.table, obj_data, self.__class__._primary)
 
     @bound
     def save(self):
@@ -96,17 +98,16 @@ class PWModel(BaseModel):
         if getattr(self, "_data_bind", None) is None:
             raise PWUnboundDeleteError()
 
-        table = self.__class__.__name__
         primary_key = self.__class__._primary
         primary_value = self._data_bind
 
-        self.db.delete(table, primary_key, primary_value)
+        self.db.delete(self.__class__.table, primary_key, primary_value)
         self._data_bind = None
 
     @classmethod
     @bound
     def all(cls) -> list[Self]:
-        data = cls.db.select("*", cls.__name__)
+        data = cls.db.select("*", cls.table)
 
         objects = []
         for row in data:
