@@ -57,9 +57,10 @@ class DesctructiveMigrationStep(MigrationStep):
 class AddCol(MigrationStep):
     def __init__(self, column: SQLColumn):
         self.column = column
-    
+
     def __str__(self) -> str:
         return f"ADD {self.column.name}"
+
 
 class DropCol(DesctructiveMigrationStep):
     def __init__(self, column_name: str):
@@ -76,7 +77,6 @@ class RenameCol(MigrationStep):
 
     def __str__(self) -> str:
         return f"RENAME {self.old_name} to {self.new_name}"
-
 
 
 class RetypeCol(DesctructiveMigrationStep):
@@ -113,7 +113,6 @@ class RemoveConstraint(MigrationStep):
         return f"REMOVE {self.constraint} from {self.column_name}"
 
 
-
 class ChangeDefault(MigrationStep):
     def __init__(self, column_name: str, new: Any):
         self.column_name = column_name
@@ -121,7 +120,6 @@ class ChangeDefault(MigrationStep):
 
     def __str__(self) -> str:
         return f"DEFAULT {self.column_name} to {self.new_default}"
-
 
 
 class Migration:

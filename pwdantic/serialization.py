@@ -4,6 +4,7 @@ import pickle
 from pydantic import BaseModel
 from pwdantic.datatypes import SQLColumn
 
+
 class GeneralSQLSerializer:
 
     def _get_column_schema(self, name: str, column: dict) -> SQLColumn:
