@@ -42,7 +42,7 @@ class PWModel(BaseModel):
         table = table if table is not None else cls.__name__
 
         columns = GeneralSQLSerializer().serialize_schema(
-            table, cls.model_json_schema(), primary_key, unique
+            cls.__name__, cls.model_json_schema(), primary_key, unique
         )
 
         used_names = [x.name for x in columns]

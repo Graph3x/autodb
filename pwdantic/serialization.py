@@ -47,7 +47,7 @@ class GeneralSQLSerializer:
 
     def serialize_schema(
         self,
-        table: str,
+        classname: str,
         schema: dict,
         primary: str = None,
         unique: list[str] = [],
@@ -56,7 +56,7 @@ class GeneralSQLSerializer:
         if "properties" in schema.keys():
             props = schema["properties"]
         else:
-            props = schema["$defs"][table]["properties"]
+            props = schema["$defs"][classname]["properties"]
 
         cols = []
         for prop in props:
@@ -78,7 +78,7 @@ class GeneralSQLSerializer:
         self, obj: BaseModel, no_bind: bool = False
     ) -> dict[str, Any]:
         table = obj.__class__.table
-        columns = self.serialize_schema(table, obj.model_json_schema())
+        columns = self.serialize_schema(obj.__class__.__name__, obj.model_json_schema())
         obj_data = {}
 
         for col in columns:
@@ -95,7 +95,7 @@ class GeneralSQLSerializer:
         self, cls: BaseModel, obj_data: tuple[Any]
     ) -> BaseModel:
 
-        columns = self.serialize_schema(cls.table, cls.model_json_schema())
+        columns = self.serialize_schema(cls.__name__, cls.model_json_schema())
         values = {}
 
         for i, col in enumerate(columns):

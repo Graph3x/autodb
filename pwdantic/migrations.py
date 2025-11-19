@@ -5,10 +5,20 @@ from pwdantic.exceptions import PWInvalidMigrationError
 
 
 class MigrationEngine:
+    def _get_contraint_diff(
+        self, old: SQLColumn, new: SQLColumn, constraint: str
+    ) -> MigrationStep | None:
+        if getattr(old, constraint) == getattr(new, constraint):
+            return None
+
+        if getattr(old, constraint):
+            return RemoveConstraint(new.name, SQLConstraint.nullable.value)
+
+        return AddConstraint(new.name, SQLConstraint.nullable.value)
+
     def get_col_diff(
         self, old_col: SQLColumn, new_col: SQLColumn
     ) -> list[MigrationStep]:
-        print(old_col)
         steps = []
 
         if old_col.datatype != new_col.datatype:
@@ -19,39 +29,10 @@ class MigrationEngine:
         if old_col.default != new_col.default:
             steps.append(ChangeDefault(new_col.name, new_col.default))
 
-        if old_col.nullable != new_col.nullable:
-            if old_col.nullable:
-                steps.append(
-                    RemoveConstraint(
-                        new_col.name, SQLConstraint.nullable.value
-                    )
-                )
-            else:
-                steps.append(
-                    AddConstraint(new_col.name, SQLConstraint.nullable.value)
-                )
-
-        if old_col.unique != new_col.unique:
-            if old_col.unique:
-                steps.append(
-                    RemoveConstraint(new_col.name, SQLConstraint.unique.value)
-                )
-            else:
-                steps.append(
-                    AddConstraint(new_col.name, SQLConstraint.unique.value)
-                )
-
-        if old_col.primary_key != new_col.primary_key:
-            if old_col.primary_key:
-                steps.append(
-                    RemoveConstraint(
-                        new_col.name, SQLConstraint.primary.value
-                    )
-                )
-            else:
-                steps.append(
-                    AddConstraint(new_col.name, SQLConstraint.primary.value)
-                )
+        for constraint in ["nullable", "unique", "primary_key"]:
+            step = self._get_contraint_diff(old_col, new_col, constraint)
+            if step is not None:
+                steps.append(step)
 
         return steps
 
@@ -101,81 +82,66 @@ class MigrationEngine:
                 mapping[step.old_name] = step.new_name
         return mapping
 
+    def _execute_step(
+        self, new_cols: dict[str, SQLColumn], step: MigrationStep
+    ):
+        if type(step) == AddCol:
+            new_cols[step.column.name] = step.column
+
+        elif type(step) == DropCol:
+            new_cols.pop(step.column_name)
+
+        elif type(step) == RenameCol:
+            col = new_cols.pop(step.old_name)
+            col.name = step.new_name
+            new_cols[col.name] = col
+
+        elif type(step) == RetypeCol:
+            new_cols[step.column_name].datatype = step.new_type
+
+        elif type(step) == AddConstraint:
+            col = new_cols[step.column_name]
+
+            if step.constraint == SQLConstraint.nullable.value:
+                col.nullable = True
+
+            if step.constraint == SQLConstraint.unique.value:
+                col.unique = True
+
+            if step.constraint == SQLConstraint.primary.value:
+                col.primary_key = True
+
+        elif type(step) == RemoveConstraint:
+            col = new_cols[step.column_name]
+
+            if step.constraint == SQLConstraint.nullable.value:
+                col.nullable = False
+
+            if step.constraint == SQLConstraint.unique.value:
+                col.unique = False
+
+            if step.constraint == SQLConstraint.primary.value:
+                col.primary_key = False
+
+        elif type(step) == ChangeDefault:
+            new_cols[step.column_name].default = step.new_default
+
     def get_migrated_cols(
         self, original: list[SQLColumn], migration: Migration
     ) -> list[SQLColumn]:
 
-        new_cols = [deepcopy(x) for x in original]
+        new_cols = {}
+        for col in original:
+            new_cols[col.name] = deepcopy(col)
+
         migration.sort()
 
         for step in migration.steps:
-            if type(step) == AddCol:
-                new_cols.append(step.column)
+            self._execute_step(new_cols, step)
 
-            elif type(step) == DropCol:
-                new_cols = filter(
-                    lambda x: x.name != step.column_name, new_cols
-                )
+        cols: list[SQLColumn] = list(new_cols.values())
 
-            elif type(step) == RenameCol:
-                for col in new_cols:
-                    if col.name == step.old_name:
-                        col.name = step.new_name
-
-            elif type(step) == RetypeCol:
-                for col in new_cols:
-                    if col.name == step.column_name:
-                        col.datatype = step.new_type
-
-            elif type(step) == AddConstraint:
-                for col in new_cols:
-                    if col.name != step.column_name:
-                        continue
-
-                    if step.constraint == SQLConstraint.nullable.value:
-                        col.nullable = True
-                    if step.constraint == SQLConstraint.unique.value:
-                        col.unique = True
-                    if step.constraint == SQLConstraint.primary.value:
-                        if (
-                            len(
-                                filter(
-                                    lambda x: type(x) == RemoveConstraint
-                                    and x.constraint == SQLConstraint.primary,
-                                    migration.steps,
-                                )
-                            )
-                            != 1
-                        ):
-                            raise PWInvalidMigrationError()
-                        col.primary_key = True
-
-            elif type(step) == RemoveConstraint:
-                for col in new_cols:
-                    if col.name != step.column_name:
-                        continue
-                    if step.constraint == SQLConstraint.nullable:
-                        col.nullable = False
-                    if step.constraint == SQLConstraint.unique:
-                        col.unique = False
-                    if step.constraint == SQLConstraint.primary:
-                        if (
-                            len(
-                                filter(
-                                    lambda x: type(x) == AddConstraint
-                                    and x.constraint == SQLConstraint.primary,
-                                    migration.steps,
-                                )
-                            )
-                            != 1
-                        ):
-                            raise PWInvalidMigrationError()
-                        col.primary_key = False
-
-            elif type(step) == ChangeDefault:
-                for col in new_cols:
-                    if col.name != step.column_name:
-                        continue
-                    col.default = step.new_default
-
-        return new_cols
+        if len([x for x in cols if x.primary_key]) != 1:
+            raise PWInvalidMigrationError()
+        
+        return cols
