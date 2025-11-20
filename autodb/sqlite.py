@@ -40,7 +40,7 @@ class SqliteEngine(DBEngine):
 
         return self.cursor.fetchall()
 
-    def insert(self, table: str, obj_data: dict[str, Any]) -> int:
+    def insert(self, table: str, obj_data: dict[str, Any]) -> int | None:
         cols = [col for col, val in obj_data.items() if val != None]
         vals = [val for val in obj_data.values() if val != None]
 
@@ -125,7 +125,7 @@ class SqliteEngine(DBEngine):
         column_name = column_data.pop(0)
         column_type = self._transfer_type_to_standard(column_data.pop(0))
 
-        nullable = None
+        nullable = False
         primary = False
         default = None
         unique = False
@@ -172,7 +172,7 @@ class SqliteEngine(DBEngine):
         self,
         migration: Migration,
         force: bool = False,
-        _current_cols: list[SQLColumn] = None,
+        _current_cols: list[SQLColumn] | None = None,
     ):
 
         me = MigrationEngine()

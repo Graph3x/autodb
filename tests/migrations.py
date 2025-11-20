@@ -59,8 +59,8 @@ def manual_migration(engine: DBEngine):
     valid_migration_steps = [
         RenameCol("nullable_int", "the_same_int"),
         RenameCol("modify_me", "i_am_modified"),
-        AddConstraint("modify_me", SQLConstraint.nullable),
-        RemoveConstraint("modify_me", SQLConstraint.unique),
+        AddConstraint("modify_me", SQLConstraint.nullable.value),
+        RemoveConstraint("modify_me", SQLConstraint.unique.value),
         AddCol(SQLColumn("new_col", SQLType.string.value, True, "default")),
     ]
 

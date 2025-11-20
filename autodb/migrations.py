@@ -19,7 +19,7 @@ class MigrationEngine:
     def get_col_diff(
         self, old_col: SQLColumn, new_col: SQLColumn
     ) -> list[MigrationStep]:
-        steps = []
+        steps: list[MigrationStep] = []
 
         if old_col.datatype != new_col.datatype:
             steps.append(
@@ -68,7 +68,7 @@ class MigrationEngine:
                 steps.append(AddCol(added_col))
 
         for to_be_dropped in removed:
-            steps.append(DropCol(to_be_dropped))
+            steps.append(DropCol(to_be_dropped.name))
 
         result = Migration(table, steps)
         result.sort()

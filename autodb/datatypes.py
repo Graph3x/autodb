@@ -2,6 +2,8 @@ import abc
 from typing import Any
 from enum import Enum
 
+from autodb.exceptions import NoBindError
+
 
 class SQLType(Enum):
     integer = "integer"
@@ -40,10 +42,6 @@ class SQLColumn:
 
     def signature(self):
         return f"{self.datatype}{self.nullable}{self.default}{self.primary_key}{self.unique}"
-
-
-class InvalidMigrationError(Exception):
-    pass
 
 
 class MigrationStep:
@@ -158,22 +156,51 @@ class Migration:
 
 class DBEngine(abc.ABC):
 
+    @abc.abstractmethod
     def select(
         self, field: str, table: str, conditions: dict[str, Any] | None = None
     ) -> list[Any]:
         pass
 
-    def insert(self, table: str, data: list[tuple]):
+    @abc.abstractmethod
+    def insert(self, table: str, obj_data: dict[str, Any]):
         pass
 
+    @abc.abstractmethod
     def migrate(self, table: str, columns: list[SQLColumn]):
         pass
 
+    @abc.abstractmethod
     def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
         pass
 
+    @abc.abstractmethod
     def delete(self, table: str, key: str, value: Any):
         pass
 
+    
     def execute_migration(self, migration: Migration, force: bool = False):
         pass
+
+class UnboundEngine(DBEngine):
+    def select(
+        self, field: str, table: str, conditions: dict[str, Any] | None = None
+    ) -> list[Any]:
+        raise NoBindError()
+
+    def insert(self, table: str, obj_data: dict[str, Any]):
+        raise NoBindError()
+
+    def migrate(self, table: str, columns: list[SQLColumn]):
+        raise NoBindError()
+
+    def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
+        raise NoBindError()
+
+    def delete(self, table: str, key: str, value: Any):
+        raise NoBindError()
+
+    
+    def execute_migration(self, migration: Migration, force: bool = False):
+        raise NoBindError()
+

@@ -5,7 +5,7 @@ from typing import Self
 
 from autodb.exceptions import *
 from autodb.sqlite import SqliteEngine
-from autodb.datatypes import DBEngine, SQLColumn
+from autodb.datatypes import DBEngine, SQLColumn, UnboundEngine
 
 from autodb.serialization import GeneralSQLSerializer
 
@@ -20,8 +20,8 @@ class DBEngineFactory(abc.ABC):
 
 
 def bound(func):
-    def wrapper(cls, *args, **kwargs):
-        if "db" not in dir(cls):
+    def wrapper(cls: "DBModel", *args, **kwargs):
+        if cls._db is None:
             raise NoBindError()
 
         return func(cls, *args, **kwargs)
@@ -30,15 +30,19 @@ def bound(func):
 
 
 class DBModel(BaseModel):
+    _db: DBEngine = UnboundEngine()
+    _table: str = "table_not_set"
+    _primary: str = "primary_not_set"
+
     @classmethod
     def bind(
         cls,
         db: DBEngine,
         primary_key: str | None = None,
         unique: list[str] = [],
-        table: str = None,
+        table: str | None = None,
     ):
-        cls.db = db
+        cls._db = db
         table = table if table is not None else cls.__name__
 
         columns = GeneralSQLSerializer().serialize_schema(
@@ -51,14 +55,16 @@ class DBModel(BaseModel):
                 if prim in used_names:
                     continue
                 primary_key = prim
-                columns.append(SQLColumn(prim, int, False, None, True, True))
-
+                columns.append(SQLColumn(prim, "int", False, None, True, True))
+                
+        assert(primary_key is not None)
+        
         cls._primary = primary_key
-        cls.table = table
+        cls._table = table
         db.migrate(table, columns)
 
     @classmethod
-    def _deserialize_object(cls, object_data: dict) -> Self:
+    def _deserialize_object(cls, object_data: tuple) -> Self:
         object = GeneralSQLSerializer().deserialize_object(cls, object_data)
 
         pk = getattr(object, object.__class__._primary)
@@ -68,8 +74,8 @@ class DBModel(BaseModel):
 
     @classmethod
     @bound
-    def get(cls, **kwargs) -> Self:
-        data = cls.db.select("*", cls.table, kwargs)
+    def get(cls, **kwargs) -> Self | None:
+        data = cls._db.select("*", cls._table, kwargs)
 
         if len(data) < 1:
             return None
@@ -79,7 +85,7 @@ class DBModel(BaseModel):
     def _create(self):
         obj_data = GeneralSQLSerializer().serialize_object(self)
 
-        insert_bind = self.db.insert(self.__class__.table, obj_data)
+        insert_bind = self._db.insert(self.__class__._table, obj_data)
         bind_attr = getattr(self, self.__class__._primary)
 
         data_bind = bind_attr if bind_attr != None else insert_bind
@@ -92,8 +98,8 @@ class DBModel(BaseModel):
             raise BindViolationError()
 
         obj_data = GeneralSQLSerializer().serialize_object(self)
-        self.db.update(
-            self.__class__.table, obj_data, self.__class__._primary
+        self._db.update(
+            self.__class__._table, obj_data, self.__class__._primary
         )
 
     @bound
@@ -110,11 +116,11 @@ class DBModel(BaseModel):
         primary_key = self.__class__._primary
         primary_value = self._data_bind
 
-        self.db.delete(self.__class__.table, primary_key, primary_value)
+        self._db.delete(self.__class__._table, primary_key, primary_value)
         self._data_bind = None
 
     @classmethod
     @bound
     def all(cls) -> list[Self]:
-        data = cls.db.select("*", cls.table)
+        data = cls._db.select("*", cls._table)
         return [cls._deserialize_object(x) for x in data]
