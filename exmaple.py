@@ -1,7 +1,7 @@
-from pwdantic.pwdantic import PWModel, PWEngineFactory
+from autodb.dbmodel import DBModel, DBEngineFactory
 
 
-class Duck(PWModel):
+class Duck(DBModel):
     duck_id: int | None = None
     name: str
     color: str = "Brown"
@@ -18,7 +18,7 @@ class Duck(PWModel):
 
 
 def main():
-    engine = PWEngineFactory.create_sqlite3_engine("test.db")
+    engine = DBEngineFactory.create_sqlite3_engine("test.db")
 
     Duck.bind(engine)
 

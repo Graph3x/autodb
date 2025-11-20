@@ -1,7 +1,7 @@
-from pwdantic.pwdantic import PWModel, PWEngineFactory, PWEngine
+from autodb.dbmodel import DBModel, DBEngineFactory, DBEngine
 
 
-class TestModel(PWModel):
+class TestModel(DBModel):
     pk: int | None = None
     unq_string: str
     nullable_int: int | None = None
@@ -17,7 +17,7 @@ class TestModel(PWModel):
         )
 
 
-def test_crud(engine: PWEngine):
+def test_crud(engine: DBEngine):
     TestModel.bind(engine)
 
     obj1 = TestModel(
@@ -61,7 +61,7 @@ def test_crud(engine: PWEngine):
 
 
 def main():
-    engine = PWEngineFactory.create_sqlite3_engine("test.db")
+    engine = DBEngineFactory.create_sqlite3_engine("test.db")
     test_crud(engine)
 
 

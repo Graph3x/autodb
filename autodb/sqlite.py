@@ -1,9 +1,9 @@
 import sqlite3
 from typing import Any
 
-from pwdantic.datatypes import PWEngine, SQLColumn
-from pwdantic.migrations import MigrationEngine, Migration
-from pwdantic.exceptions import PWDestructiveMigrationError
+from autodb.datatypes import DBEngine, SQLColumn
+from autodb.migrations import MigrationEngine, Migration
+from autodb.exceptions import DestructiveMigrationError
 
 sqlite_column = tuple[int, str, str, int, Any, int]
 
@@ -12,7 +12,7 @@ class SQLiteEngineError(Exception):
     pass
 
 
-class SqliteEngine(PWEngine):
+class SqliteEngine(DBEngine):
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
         self.cursor = conn.cursor()
@@ -181,7 +181,7 @@ class SqliteEngine(PWEngine):
             return
 
         if not force and migration.is_destructive():
-            raise PWDestructiveMigrationError()
+            raise DestructiveMigrationError()
 
         if _current_cols is None:
             _current_cols = self._get_SQLColumns(migration.table)

@@ -3,18 +3,18 @@ import abc
 import sqlite3
 from typing import Self
 
-from pwdantic.exceptions import *
-from pwdantic.sqlite import SqliteEngine
-from pwdantic.datatypes import PWEngine, SQLColumn
+from autodb.exceptions import *
+from autodb.sqlite import SqliteEngine
+from autodb.datatypes import DBEngine, SQLColumn
 
-from pwdantic.serialization import GeneralSQLSerializer
+from autodb.serialization import GeneralSQLSerializer
 
 DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
 
 
-class PWEngineFactory(abc.ABC):
+class DBEngineFactory(abc.ABC):
     @staticmethod
-    def create_sqlite3_engine(database: str = "") -> PWEngine:
+    def create_sqlite3_engine(database: str = "") -> DBEngine:
         conn = sqlite3.connect(database)
         return SqliteEngine(conn)
 
@@ -22,18 +22,18 @@ class PWEngineFactory(abc.ABC):
 def bound(func):
     def wrapper(cls, *args, **kwargs):
         if "db" not in dir(cls):
-            raise PWNoBindError()
+            raise NoBindError()
 
         return func(cls, *args, **kwargs)
 
     return wrapper
 
 
-class PWModel(BaseModel):
+class DBModel(BaseModel):
     @classmethod
     def bind(
         cls,
-        db: PWEngine,
+        db: DBEngine,
         primary_key: str | None = None,
         unique: list[str] = [],
         table: str = None,
@@ -89,7 +89,7 @@ class PWModel(BaseModel):
         bind = self._data_bind
 
         if getattr(self, self.__class__._primary) != bind:
-            raise PWBindViolationError()
+            raise BindViolationError()
 
         obj_data = GeneralSQLSerializer().serialize_object(self)
         self.db.update(
@@ -105,7 +105,7 @@ class PWModel(BaseModel):
     @bound
     def delete(self):
         if getattr(self, "_data_bind", None) is None:
-            raise PWUnboundDeleteError()
+            raise UnboundDeleteError()
 
         primary_key = self.__class__._primary
         primary_value = self._data_bind

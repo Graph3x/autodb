@@ -156,7 +156,7 @@ class Migration:
         self.steps.sort(key=self._step_key_function)
 
 
-class PWEngine(abc.ABC):
+class DBEngine(abc.ABC):
 
     def select(
         self, field: str, table: str, conditions: dict[str, Any] | None = None

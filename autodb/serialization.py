@@ -1,8 +1,7 @@
-from pwdantic.exceptions import PWInvalidTypeError
 from typing import Any
 import pickle
 from pydantic import BaseModel
-from pwdantic.datatypes import SQLColumn
+from autodb.datatypes import SQLColumn
 
 
 class GeneralSQLSerializer:
@@ -18,13 +17,13 @@ class GeneralSQLSerializer:
             types = column["anyOf"]
 
             if len(types) > 2:
-                raise PWInvalidTypeError()
+                raise TypeError("Field has to have a clear type")
 
             if types[0]["type"] != "null" and types[1]["type"] != "null":
-                raise PWInvalidTypeError()
+                raise TypeError("Invalid field type")
 
             if types[0]["type"] == "null" and types[1]["type"] == "null":
-                raise PWInvalidTypeError()
+                raise TypeError("Invalid field type")
 
             nullable = True
             column = types[0] if types[0]["type"] != "null" else types[1]

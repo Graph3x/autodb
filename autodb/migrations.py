@@ -1,7 +1,7 @@
-from pwdantic.serialization import SQLColumn
-from pwdantic.datatypes import *
+from autodb.serialization import SQLColumn
+from autodb.datatypes import *
 from copy import deepcopy
-from pwdantic.exceptions import PWInvalidMigrationError
+from autodb.exceptions import InvalidMigrationError
 
 
 class MigrationEngine:
@@ -142,6 +142,6 @@ class MigrationEngine:
         cols: list[SQLColumn] = list(new_cols.values())
 
         if len([x for x in cols if x.primary_key]) != 1:
-            raise PWInvalidMigrationError()
+            raise InvalidMigrationError()
         
         return cols

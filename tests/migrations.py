@@ -1,8 +1,8 @@
-from pwdantic.pwdantic import PWModel, PWEngineFactory, PWEngine
-from pwdantic.datatypes import *
+from autodb.dbmodel import DBModel, DBEngineFactory, DBEngine
+from autodb.datatypes import *
 
 
-class MigrationTestModelOld(PWModel):
+class MigrationTestModelOld(DBModel):
     pk: int | None = None
     unq_string: str = "asdf"
     nullable_int: int | None = None
@@ -18,7 +18,7 @@ class MigrationTestModelOld(PWModel):
         )
 
 
-class MigrationTestModelNew(PWModel):
+class MigrationTestModelNew(DBModel):
     pk: int | None = None
     unq_string: str | None = "q"
     the_same_int: int | None = None
@@ -35,7 +35,7 @@ class MigrationTestModelNew(PWModel):
         )
 
 
-def automatic_migration(engine: PWEngine):
+def automatic_migration(engine: DBEngine):
     MigrationTestModelOld.bind(engine)
 
     a = MigrationTestModelOld(unq_string="hello", modify_me=8)
@@ -47,7 +47,7 @@ def automatic_migration(engine: PWEngine):
     MigrationTestModelNew.bind(engine)
 
 
-def manual_migration(engine: PWEngine):
+def manual_migration(engine: DBEngine):
     MigrationTestModelOld.bind(engine)
 
     a = MigrationTestModelOld(unq_string="hello", modify_me=8)
@@ -73,7 +73,7 @@ def manual_migration(engine: PWEngine):
 
 
 def main():
-    engine = PWEngineFactory.create_sqlite3_engine("test.db")
+    engine = DBEngineFactory.create_sqlite3_engine("test.db")
     engine._drop_table("migration_test")
     #manual_migration(engine)
     automatic_migration(engine)
