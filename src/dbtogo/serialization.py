@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 import pickle
-from autodb.datatypes import SQLColumn
+from dbtogo.datatypes import SQLColumn
 
 from typing import TYPE_CHECKING
 from typing import TypeVar, Any
@@ -10,7 +10,7 @@ from typing import TypeVar, Any
 T = TypeVar("T", bound="DBModel")
 
 if TYPE_CHECKING:
-    from autodb.dbmodel import DBModel
+    from dbtogo.dbmodel import DBModel
 
 
 class GeneralSQLSerializer:

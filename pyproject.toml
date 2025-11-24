@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dbtogo"
+version = "0.0.1"
+authors = [
+  { name="Filip Hejzlar", email="hejzlar.filip@seznam.cz" },
+]
+description = "Python ORM on top of Pydantic models with focus on simplicity"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.urls]
+Homepage = "https://github.com/Graph3x/dbtogo"
+Issues = "https://github.com/Graph3x/dbtogo/issues"

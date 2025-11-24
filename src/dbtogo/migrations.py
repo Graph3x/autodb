@@ -1,7 +1,7 @@
-from autodb.serialization import SQLColumn
-from autodb.datatypes import *
+from dbtogo.serialization import SQLColumn
+from dbtogo.datatypes import *
 from copy import deepcopy
-from autodb.exceptions import InvalidMigrationError
+from dbtogo.exceptions import InvalidMigrationError
 
 
 class MigrationEngine:

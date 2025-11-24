@@ -2,7 +2,7 @@ import abc
 from typing import Any
 from enum import Enum
 
-from autodb.exceptions import NoBindError
+from dbtogo.exceptions import NoBindError
 
 
 class SQLType(Enum):

@@ -1,9 +1,9 @@
 import sqlite3
 from typing import Any
 
-from autodb.datatypes import DBEngine, SQLColumn
-from autodb.migrations import MigrationEngine, Migration
-from autodb.exceptions import DestructiveMigrationError
+from dbtogo.datatypes import DBEngine, SQLColumn
+from dbtogo.migrations import MigrationEngine, Migration
+from dbtogo.exceptions import DestructiveMigrationError
 
 sqlite_column = tuple[int, str, str, int, Any, int]
 

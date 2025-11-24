@@ -20,7 +20,7 @@ class UnboundDeleteError(Exception):
 class AutoMigrationError(Exception):
     def __init__(self):
         super().__init__(
-            "autodb cant automatically migrate the schemas, consider manual migration"
+            "dbtogo cant automatically migrate the schemas, consider manual migration"
         )
 
 

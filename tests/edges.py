@@ -1,4 +1,4 @@
-from autodb.dbmodel import DBModel, DBEngineFactory, DBEngine
+from dbtogo.dbmodel import DBModel, DBEngineFactory, DBEngine
 
 
 class TestModel(DBModel):

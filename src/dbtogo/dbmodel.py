@@ -3,11 +3,11 @@ import abc
 import sqlite3
 from typing import Self
 
-from autodb.exceptions import *
-from autodb.sqlite import SqliteEngine
-from autodb.datatypes import DBEngine, SQLColumn, UnboundEngine
+from dbtogo.exceptions import *
+from dbtogo.sqlite import SqliteEngine
+from dbtogo.datatypes import DBEngine, SQLColumn, UnboundEngine
 
-from autodb.serialization import GeneralSQLSerializer
+from dbtogo.serialization import GeneralSQLSerializer
 
 DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
 

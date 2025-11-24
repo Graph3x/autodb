@@ -1,5 +1,5 @@
-from autodb.dbmodel import DBModel, DBEngineFactory, DBEngine
-from autodb.datatypes import *
+from dbtogo.dbmodel import DBModel, DBEngineFactory, DBEngine
+from dbtogo.datatypes import *
 
 
 class MigrationTestModelOld(DBModel):
