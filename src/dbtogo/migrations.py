@@ -28,7 +28,7 @@ class MigrationEngine:
 
         return AddConstraint(new.name, SQLConstraint.nullable.value)
 
-    def get_col_diff(
+    def _get_col_diff(
         self, old_col: SQLColumn, new_col: SQLColumn
     ) -> list[MigrationStep]:
         steps: list[MigrationStep] = []
@@ -56,7 +56,7 @@ class MigrationEngine:
 
         for new_col in matched_cols:
             og_col = [x for x in original if x.name == new_col.name][0]
-            steps += self.get_col_diff(og_col, new_col)
+            steps += self._get_col_diff(og_col, new_col)
 
         matched_names = [x.name for x in matched_cols]
 
