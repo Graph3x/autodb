@@ -45,6 +45,18 @@ class SQLColumn:
         representation += f"{self.datatype} ({self.default})"
         return representation
 
+    def __eq__(self, other: object) -> bool:
+        attributes = ["name", "datatype", "nullable", "default", "primary_key", "unique"]
+
+        try:
+            for attr in attributes:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+        except Exception:
+            return False
+
+        return True
+
     def signature(self) -> str:
         str_signature = f"{self.datatype}{self.nullable}{self.default}"
         str_signature += f"{self.primary_key}{self.unique}"

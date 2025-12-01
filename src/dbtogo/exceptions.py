@@ -13,13 +13,6 @@ class UnboundDeleteError(Exception):
         super().__init__("You cannot delete an object that is not in the db")
 
 
-class AutoMigrationError(Exception):
-    def __init__(self) -> None:
-        super().__init__(
-            "dbtogo cant automatically migrate the schemas, consider manual migration"
-        )
-
-
 class DestructiveMigrationError(Exception):
     def __init__(self) -> None:
         super().__init__(
