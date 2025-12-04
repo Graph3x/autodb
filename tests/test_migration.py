@@ -10,7 +10,7 @@ from dbtogo.datatypes import (
 from dbtogo.migrations import Migration
 
 
-def test_migration():
+def test_migration_is_destructive():
     migration = Migration("test", [])
     assert not migration.is_destructive()
 
