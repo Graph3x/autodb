@@ -17,7 +17,11 @@ def test_identity():
     duck = SimpleDuck(name="McDuck")
     duck.save()
 
+    print(duck._cache)
+
     duck2 = SimpleDuck.get(name="McDuck")
+
+    print(duck2._cache)
 
     assert duck.pk == duck2.pk
 
