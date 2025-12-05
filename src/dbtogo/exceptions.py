@@ -3,11 +3,6 @@ class NoBindError(Exception):
         super().__init__("You need to bind this model to a db before first use")
 
 
-class BindViolationError(Exception):
-    def __init__(self) -> None:
-        super().__init__("You cannot change the primary key of a bound object")
-
-
 class UnboundDeleteError(Exception):
     def __init__(self) -> None:
         super().__init__("You cannot delete an object that is not in the db")

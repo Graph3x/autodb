@@ -14,15 +14,26 @@ def dont_test_identity():
     engine = DBEngineFactory.create_sqlite3_engine("test.db")
 
     SimpleDuck.bind(engine)
-    duck = SimpleDuck(name="McDuck")
+    duck = SimpleDuck(name="Duck")
     duck.save()
 
-    duck2 = SimpleDuck.get(name="McDuck")
+    duck2 = SimpleDuck.get(name="Duck")
 
-    print(duck is duck)
     print(duck is duck2)
+    print(duck.pk == duck2.pk)
+
+    duck.pk = 67
+
+    duck3 = SimpleDuck.get(name="Duck")
+    print(duck is duck3)
+
+    duck.save()
+    duck4 = SimpleDuck.get(name="Duck")
+    print(duck is duck4)
 
     duck.delete()
+
+    print(SimpleDuck.all())
 
 
 dont_test_identity()

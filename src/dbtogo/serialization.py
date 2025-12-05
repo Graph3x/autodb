@@ -93,7 +93,9 @@ class GeneralSQLSerializer:
 
         return obj_data
 
-    def deserialize_object(self, cls: type[T], obj_data: tuple[Any]) -> T:
+    def partially_deserialize_object(
+        self, cls: type[T], obj_data: tuple[Any]
+    ) -> dict[str, Any]:
         columns = self.serialize_schema(cls.__name__, cls.model_json_schema())
         values = {}
 
@@ -104,5 +106,12 @@ class GeneralSQLSerializer:
 
             values[col.name] = value
 
+        return values
+
+    def build_object(self, cls: type[T], values: dict[str, Any]) -> T:
         result = cls(**values)
         return result
+
+    def deserialize_object(self, cls: type[T], obj_data: tuple[Any]) -> T:
+        values = self.partially_deserialize_object(cls, obj_data)
+        return self.build_object(cls, values)

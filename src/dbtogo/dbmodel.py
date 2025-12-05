@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from pydantic.fields import ModelPrivateAttr
 
 from dbtogo.datatypes import DBEngine, UnboundEngine
-from dbtogo.exceptions import BindViolationError, NoBindError, UnboundDeleteError
+from dbtogo.exceptions import NoBindError, UnboundDeleteError
 from dbtogo.serialization import GeneralSQLSerializer
 from dbtogo.sqlite import SqliteEngine
 
@@ -21,6 +21,7 @@ class DBModel(BaseModel):
     _db: DBEngine = UnboundEngine()
     _table: str = "table_not_set"
     _primary: str = "primary_not_set"
+    _cache: dict = {}
 
     @classmethod
     def bind(
@@ -31,6 +32,8 @@ class DBModel(BaseModel):
         table: str | None = None,
     ) -> None:
         cls._db = db
+        cls._cache = {}
+
         table = table if table is not None else cls.__name__
 
         columns = GeneralSQLSerializer().serialize_schema(
@@ -59,10 +62,6 @@ class DBModel(BaseModel):
     @classmethod
     def _deserialize_object(cls, object_data: tuple) -> Self:
         py_object = GeneralSQLSerializer().deserialize_object(cls, object_data)
-
-        pk = getattr(py_object, py_object.__class__._primary)
-        py_object._data_bind = pk
-
         return py_object
 
     @classmethod
@@ -70,33 +69,40 @@ class DBModel(BaseModel):
         assert cls._is_bound()
 
         data = cls._db.select("*", cls._table, kwargs)
-
         if len(data) < 1:
             return None
 
-        return cls._deserialize_object(data[0])
+        gss = GeneralSQLSerializer()
+
+        new_object_values = gss.partially_deserialize_object(cls, data[0])
+        pk_value = new_object_values[cls._primary]
+
+        cached_obj = cls._cache.get(pk_value, None)
+        if cached_obj is not None:
+            return cached_obj
+
+        return gss.build_object(cls, new_object_values)
 
     def _create(self) -> None:
         obj_data = GeneralSQLSerializer().serialize_object(self)
         insert_bind = self._db.insert(self.__class__._table, obj_data)
 
-        if getattr(self, self.__class__._primary) is None:
-            setattr(self, self.__class__._primary, insert_bind)
+        pk = self.__class__._primary
 
-        self._data_bind = getattr(self, self.__class__._primary)
+        if getattr(self, pk) is None:
+            setattr(self, pk, insert_bind)
+
+        self.__class__._cache[getattr(self, pk)] = self
 
     def _update(self) -> None:
-        bind = self._data_bind
-        if getattr(self, self.__class__._primary) != bind:
-            raise BindViolationError()
-
         obj_data = GeneralSQLSerializer().serialize_object(self)
         self._db.update(self.__class__._table, obj_data, self.__class__._primary)
 
     def save(self) -> None:
         assert self.__class__._is_bound()
 
-        if getattr(self, "_data_bind", None) is None:
+        pk_value = getattr(self, self.__class__._primary, None)
+        if pk_value is None or self.__class__._cache.get(pk_value, None) is None:
             return self._create()
 
         return self._update()
@@ -104,18 +110,12 @@ class DBModel(BaseModel):
     def delete(self) -> None:
         assert self.__class__._is_bound()
 
-        if getattr(self, "_data_bind", None) is None:
+        pk_value = getattr(self, self.__class__._primary)
+
+        if pk_value is None or self._cache.get(pk_value, None) is None:
             raise UnboundDeleteError()
 
-        bind = self._data_bind
-        if getattr(self, self.__class__._primary) != bind:
-            raise BindViolationError()
-
-        primary_key = self.__class__._primary
-        primary_value = self._data_bind
-
-        self._db.delete(self.__class__._table, primary_key, primary_value)
-        self._data_bind = None
+        self._db.delete(self.__class__._table, self.__class__._primary, pk_value)
 
     @classmethod
     def all(cls) -> list[Self]:

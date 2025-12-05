@@ -1,7 +1,7 @@
 import pytest
 
 from dbtogo.dbmodel import DBEngineFactory, DBModel
-from dbtogo.exceptions import BindViolationError, NoBindError, UnboundDeleteError
+from dbtogo.exceptions import NoBindError, UnboundDeleteError
 
 
 class CryptoDuck(DBModel):
@@ -101,18 +101,6 @@ def test_crud():
 
     assert len(CryptoDuck.all()) == 1
 
-    old_pk = duck.pk
-
-    with pytest.raises(BindViolationError):
-        duck.pk = 7
-        duck.save()
-
-    assert duck.pk == 7
-
-    with pytest.raises(BindViolationError):
-        duck.delete()
-
-    duck.pk = old_pk
     duck.delete()
 
     db_duck = CryptoDuck.get(name="McDuck")
