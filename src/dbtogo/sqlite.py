@@ -246,7 +246,6 @@ class SqliteEngine(DBEngine):
         set_string = set_string[:-2]
 
         query = f"UPDATE {table} SET {set_string} WHERE {primary_key} = ?"
-        print(query)
         vals.append(obj_data[primary_key])
 
         self.cursor.execute(query, tuple(vals))

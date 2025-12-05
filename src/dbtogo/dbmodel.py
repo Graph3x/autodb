@@ -26,13 +26,35 @@ class IdentityCache:
         if key is None:
             return None
 
-        return self._cache.get(key, None)
+        hard_result = self._cache.get(key, None)
+        if hard_result is not None:
+            return hard_result
+
+        hard_key = self._soft_keys.get(key, None)
+        if hard_key is None:
+            return None
+
+        ret_val = self._cache.get(hard_key, None)
+        return ret_val
 
     def set(self, key, value) -> None:
         self._cache[key] = value
 
+    def set_soft(self, hard_key, soft_key):
+        if hard_key in self._soft_keys.keys():
+            self._soft_keys[soft_key] = self._soft_keys.pop(hard_key)
+            return
+        self._soft_keys[soft_key] = hard_key
+
+    def get_hard(self, key):
+        return self._soft_keys.get(key, key)
+
     def remove(self, key) -> None:
-        self._cache.pop(key)
+        hard_key = self.get_hard(key)
+        if hard_key != key:
+            self._soft_keys.pop(key)
+
+        self._cache.pop(hard_key)
 
     def __str__(self) -> str:
         return str(self._cache)
@@ -124,8 +146,7 @@ class DBModel(BaseModel):
             if old_pk_val is None:
                 return super().__setattr__(name, value)
 
-            # cls._cache.pop(old_pk_val)
-            cls._cache.set(value, self)
+            cls._cache.set_soft(old_pk_val, value)
 
         return super().__setattr__(name, value)
 
@@ -149,22 +170,27 @@ class DBModel(BaseModel):
             raise NoBindError()
 
         pk_value = getattr(self, self.__class__._primary, None)
-        if self.__class__._cache.get(pk_value) is None:
+        cached = self.__class__._cache.get(pk_value)
+
+        if cached is None:
             return self._create()
 
-        print("A ", pk_value)
+        assert cached is self
+
         return self._update()
 
     def delete(self) -> None:
         if not self.__class__._is_bound():
             raise NoBindError()
 
-        pk_value = getattr(self, self.__class__._primary)
+        pk = self.__class__._primary
+        pk_value = getattr(self, pk)
+        cached = self._cache.get(pk_value)
 
-        if self._cache.get(pk_value) is None:
+        if cached is None:
             raise UnboundDeleteError()
 
-        self._db.delete(self.__class__._table, self.__class__._primary, pk_value)
+        self._db.delete(self.__class__._table, pk, self._cache.get_hard(pk_value))
         self.__class__._cache.remove(pk_value)
 
     @classmethod
